@@ -1,0 +1,9 @@
+# Sitio estático: no hay paso de compilación, se publica la raíz del repositorio.
+[build]
+  publish = "."
+  command = ""
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Cache-Control = "no-cache"
