@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Picks NFL · Puntos de confianza</title>
+<meta name="description" content="Asignación semanal de puntos de confianza para el Pick'em de Yahoo NFL, calculada con posiciones, rivales comunes, cadenas de resultados y bajas.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="top">
+  <div class="top-inner">
+    <div class="brand">
+      <span class="brand-mark">NFL</span>
+      <div>
+        <h1>Picks · Puntos de confianza</h1>
+        <p class="sub" id="season-label">Temporada —</p>
+      </div>
+    </div>
+    <div class="top-actions">
+      <span class="muted small" id="data-age">Sin datos</span>
+      <button class="btn" id="btn-refresh" type="button">Actualizar datos</button>
+      <button class="btn ghost" id="btn-settings" type="button" aria-expanded="false" aria-controls="settings">Ajustes</button>
+    </div>
+  </div>
+</header>
+
+<div id="banner" class="banner" hidden></div>
+
+<main class="wrap">
+  <section class="week-bar">
+    <button class="btn ghost" id="week-prev" type="button" aria-label="Semana anterior">‹</button>
+    <select id="week-select" aria-label="Semana"></select>
+    <button class="btn ghost" id="week-next" type="button" aria-label="Semana siguiente">›</button>
+    <span class="muted small" id="week-dates"></span>
+  </section>
+
+  <nav class="tabs" role="tablist">
+    <button class="tab active" data-tab="picks" role="tab" type="button">Picks</button>
+    <button class="tab" data-tab="standings" role="tab" type="button">Posiciones</button>
+    <button class="tab" data-tab="injuries" role="tab" type="button">Bajas</button>
+    <button class="tab" data-tab="method" role="tab" type="button">Método</button>
+  </nav>
+
+  <section id="tab-picks" class="panel" role="tabpanel">
+    <div class="toolbar">
+      <p class="muted" id="picks-summary"></p>
+      <div class="toolbar-actions">
+        <button class="btn ghost" id="btn-reset-order" type="button">Orden del modelo</button>
+        <button class="btn ghost" id="btn-reset-picks" type="button">Quitar picks manuales</button>
+        <button class="btn" id="btn-copy" type="button">Copiar lista</button>
+      </div>
+    </div>
+    <div id="games"></div>
+  </section>
+
+  <section id="tab-standings" class="panel" role="tabpanel" hidden>
+    <div id="standings"></div>
+  </section>
+
+  <section id="tab-injuries" class="panel" role="tabpanel" hidden>
+    <p class="muted">Reporte de lesiones de ESPN para los equipos que juegan esta semana. Marca como <strong>clave</strong> a los titulares cuya ausencia pesa más, o <strong>ignora</strong> a quienes no cambian el partido. Tus marcas se guardan en este navegador.</p>
+    <div id="injuries"></div>
+  </section>
+
+  <section id="tab-method" class="panel" role="tabpanel">
+    <article class="method">
+      <h2>Cómo se reparten los puntos</h2>
+      <p>Cada semana el modelo estima una línea (ventaja en puntos) para cada partido usando únicamente los resultados de esta temporada, la convierte en probabilidad de victoria y asigna los puntos de confianza en orden: el partido más seguro recibe el máximo y el más parejo recibe 1.</p>
+      <h3>1. Rating de cada equipo</h3>
+      <p>Se calcula un <em>Simple Rating System</em> (SRS): el margen promedio de cada equipo, ajustado por la fuerza de sus rivales, resuelto de manera iterativa. Con esto, ganarle por 10 a un equipo fuerte vale más que ganarle por 10 a uno débil. El margen de cada partido se topa (por defecto ±24) para que una paliza no distorsione, y se descuenta la ventaja de local. Las jornadas recientes pesan más que las antiguas (control <strong>Recencia</strong>): la última jornada pesa 1, la anterior 0.85, la anterior 0.72, y así sucesivamente.</p>
+      <p>Ese rating se mezcla con el <strong>récord</strong> (posición en la tabla) para no depender solo de los márgenes: un equipo que gana cerrado pero gana siempre también recibe crédito.</p>
+      <h3>2. Correlaciones entre equipos</h3>
+      <ul>
+        <li><strong>Enfrentamiento directo</strong>: si ya se enfrentaron esta temporada, el margen de ese partido ajusta la línea.</li>
+        <li><strong>Rivales comunes</strong>: para cada rival que ambos equipos enfrentaron, se compara el margen que obtuvo cada uno; el promedio de esas diferencias ajusta la línea.</li>
+        <li><strong>Cadenas de resultados</strong>: si A venció a X y X venció a B, cuenta una cadena a favor de A. Se netean las cadenas a favor de cada lado, con tope.</li>
+      </ul>
+      <h3>3. Bajas sensibles</h3>
+      <p>Se toma el reporte de lesiones de ESPN. Cada jugador resta puntos según su posición (un QB pesa 6, un RB o WR 1.5, un CB 1.2…) y su estatus (<em>Out</em> o reserva de lesionados cuentan completo, <em>Doubtful</em> 75 %, <em>Questionable</em> 35 %). Solo el primer QB de la lista cuenta como titular. Puedes marcar jugadores como <strong>clave</strong> (×1.6) o <strong>ignorar</strong> (×0) en la pestaña Bajas, y hay un tope por equipo.</p>
+      <h3>4. De la línea a los puntos</h3>
+      <p>Línea del local = rating local − rating visitante + ventaja de local + enfrentamiento directo + rivales comunes + cadenas − bajas del local + bajas del visitante. La probabilidad se obtiene con una distribución normal con desviación de 13.5 puntos (el estándar histórico de la NFL). Los partidos se ordenan por probabilidad del equipo elegido y reciben N, N−1, …, 1 puntos. Si eliges manualmente al no favorito, ese partido baja en la lista porque su probabilidad es menor; también puedes reordenar con las flechas.</p>
+      <h3>Datos</h3>
+      <p>Resultados, calendario y lesiones provienen de la API pública de ESPN y se leen directamente desde tu navegador. Las semanas terminadas se guardan en caché local. En postemporada (comodines, divisional, campeonatos y Super Bowl) se usan también los resultados de playoffs, y el Super Bowl se trata como sede neutral.</p>
+    </article>
+  </section>
+</main>
+
+<aside id="settings" class="settings" hidden>
+  <div class="settings-head">
+    <h2>Ajustes del modelo</h2>
+    <button class="btn ghost" id="btn-close-settings" type="button" aria-label="Cerrar">×</button>
+  </div>
+  <div id="settings-body"></div>
+  <div class="settings-foot">
+    <button class="btn ghost" id="btn-defaults" type="button">Valores por defecto</button>
+  </div>
+</aside>
+
+<footer class="foot muted small">
+  Datos: API pública de ESPN · Los cálculos se hacen en tu navegador · Herramientas Monhey.B
+</footer>
+
+<script src="model.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
